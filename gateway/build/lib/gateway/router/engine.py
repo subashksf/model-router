@@ -36,10 +36,7 @@ def route(
         tier_name = classification.complexity
 
     # Fall back to "complex" if the tier is missing in the policy
-    tier_cfg = policy.tiers.get(tier_name)
-    if tier_cfg is None:
-        tier_name = "complex"
-        tier_cfg = policy.tiers.get("complex")
+    tier_cfg = policy.tiers.get(tier_name) or policy.tiers.get("complex")
     if tier_cfg is None:
         raise ValueError(f"No tier config found for '{tier_name}' in policy")
 

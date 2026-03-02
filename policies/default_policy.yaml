@@ -1,23 +1,26 @@
 # Default routing policy.
+#
+# provider: mock  → no API key needed, returns fake responses instantly.
+#                   Swap to "anthropic" or "openai" when ready for real calls.
+#
 # Copy this file and rename it <tenant_id>.yaml to create per-tenant overrides.
 
 tiers:
   simple:
-    provider: anthropic
-    model: claude-haiku-4-5-20251001
+    provider: mock
+    model: mock-haiku
   moderate:
-    provider: anthropic
-    model: claude-sonnet-4-6
+    provider: mock
+    model: mock-sonnet
   complex:
-    provider: anthropic
-    model: claude-sonnet-4-6
+    provider: mock
+    model: mock-sonnet
   sensitive:
-    provider: anthropic
-    model: claude-opus-4-6
+    provider: mock
+    model: mock-opus
 
-# Override routing for specific feature tags (first match wins).
-# Useful for hard-pinning features regardless of classifier output.
 overrides: []
+  # Uncomment to pin specific features to a tier regardless of classifier output:
   # - match:
   #     feature_tag: autocomplete
   #   tier: simple

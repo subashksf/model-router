@@ -6,13 +6,11 @@ from functools import lru_cache
 
 from gateway.providers.anthropic import AnthropicProvider
 from gateway.providers.base import BaseProvider
-from gateway.providers.mock import MockProvider
 from gateway.providers.openai import OpenAIProvider
 
 _REGISTRY: dict[str, type[BaseProvider]] = {
     "anthropic": AnthropicProvider,
     "openai": OpenAIProvider,
-    "mock": MockProvider,
 }
 
 

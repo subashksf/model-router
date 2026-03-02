@@ -24,3 +24,13 @@ out/
 
 # Docker
 *.log
+
+# Experiment results (large, generated — commit selectively)
+experiments/results/*.json
+
+# Jupyter
+.ipynb_checkpoints/
+analysis/figures/
+
+# Local planning
+BACKLOG.md

@@ -18,6 +18,8 @@ services:
     ports:
       - "3000:3000"
     env_file: .env
+    environment:
+      GATEWAY_INTERNAL_URL: http://gateway:8000
     depends_on:
       - gateway
     restart: unless-stopped
@@ -29,12 +31,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-router}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./gateway/db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-router}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-router} -d ${POSTGRES_DB:-model_router}"]
       interval: 5s
       timeout: 5s
       retries: 5

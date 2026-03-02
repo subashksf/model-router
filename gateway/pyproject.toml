@@ -26,5 +26,15 @@ dev = [
 line-length = 100
 target-version = "py312"
 
+[tool.setuptools.packages.find]
+where = [".."]
+include = ["gateway*"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = [".."]
+markers = ["e2e: marks tests as end-to-end (deselect with '-m not e2e')"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

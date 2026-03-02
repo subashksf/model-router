@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   async rewrites() {
     // Proxy /api/gateway/* → gateway service so the browser never needs CORS config
     return [

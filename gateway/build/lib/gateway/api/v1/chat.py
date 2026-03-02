@@ -27,7 +27,7 @@ async def chat_completions(
     classification = await classify(body.messages)
 
     # 2. Route → select provider + model
-    routing = route(classification, tenant_id=x_tenant_id, feature_tag=x_feature_tag)
+    routing = route(classification, tenant_id=x_tenant_id)
 
     # 3. Call provider
     provider = get_provider(routing.provider)
@@ -55,19 +55,16 @@ async def chat_completions(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    # 4. Emit telemetry (non-blocking, must not fail the request)
+    # 4. Emit telemetry (non-blocking)
     latency = time.monotonic() - started_at
-    try:
-        await emit(
-            tenant_id=x_tenant_id,
-            feature_tag=x_feature_tag,
-            classification=classification,
-            routing=routing,
-            tokens_in=response.usage.prompt_tokens if response.usage else classification.token_count,
-            tokens_out=response.usage.completion_tokens if response.usage else 0,
-            latency_s=latency,
-        )
-    except Exception:
-        pass  # telemetry failures must never surface to the client
+    await emit(
+        tenant_id=x_tenant_id,
+        feature_tag=x_feature_tag,
+        classification=classification,
+        routing=routing,
+        tokens_in=response.usage.prompt_tokens if response.usage else classification.token_count,
+        tokens_out=response.usage.completion_tokens if response.usage else 0,
+        latency_s=latency,
+    )
 
     return response

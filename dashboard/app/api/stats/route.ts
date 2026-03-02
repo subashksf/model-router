@@ -13,7 +13,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:8000";
+// GATEWAY_INTERNAL_URL is for server-to-server calls inside Docker (e.g. http://gateway:8000).
+// Falls back to NEXT_PUBLIC_GATEWAY_URL for local dev outside Docker.
+const GATEWAY_URL =
+  process.env.GATEWAY_INTERNAL_URL ??
+  process.env.NEXT_PUBLIC_GATEWAY_URL ??
+  "http://localhost:8000";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;

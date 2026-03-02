@@ -19,7 +19,7 @@ class Message(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     model: str = "auto"  # ignored by the router; we pick the model
-    messages: list[Message] = Field(min_length=1)
+    messages: list[Message]
     temperature: float | None = None
     max_tokens: int | None = None
     stream: bool = False
