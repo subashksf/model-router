@@ -1,0 +1,43 @@
+services:
+  gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./policies:/app/policies:ro
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+    ports:
+      - "3000:3000"
+    env_file: .env
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-model_router}
+      POSTGRES_USER: ${POSTGRES_USER:-router}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./gateway/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-router}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

@@ -1,0 +1,26 @@
+# Default routing policy.
+# Copy this file and rename it <tenant_id>.yaml to create per-tenant overrides.
+
+tiers:
+  simple:
+    provider: anthropic
+    model: claude-haiku-4-5-20251001
+  moderate:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  complex:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  sensitive:
+    provider: anthropic
+    model: claude-opus-4-6
+
+# Override routing for specific feature tags (first match wins).
+# Useful for hard-pinning features regardless of classifier output.
+overrides: []
+  # - match:
+  #     feature_tag: autocomplete
+  #   tier: simple
+  # - match:
+  #     feature_tag: legal-review
+  #   tier: sensitive

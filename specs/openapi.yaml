@@ -1,0 +1,328 @@
+openapi: "3.1.0"
+
+info:
+  title: Model Router API
+  description: >
+    OpenAI-compatible LLM gateway that classifies queries and routes them
+    to the appropriate model tier. Swap your OpenAI base URL to get instant
+    cost attribution and intelligent routing.
+  version: "0.1.0"
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (Docker Compose)
+
+tags:
+  - name: chat
+    description: OpenAI-compatible chat completions
+  - name: internal
+    description: Internal endpoints for dashboard and ops tooling
+
+# ---------------------------------------------------------------------------
+# Shared parameters
+# ---------------------------------------------------------------------------
+components:
+  parameters:
+    FeatureTag:
+      name: X-Feature-Tag
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+        pattern: "^[a-zA-Z0-9-_]+$"
+      description: >
+        Labels this request with a product feature for cost attribution.
+        Example: autocomplete, summarization, legal-review
+
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+        pattern: "^[a-zA-Z0-9-_]+$"
+      description: >
+        Selects the tenant routing policy file (policies/<tenant_id>.yaml).
+        Falls back to default_policy.yaml if not provided or file not found.
+
+  # ---------------------------------------------------------------------------
+  # Schemas
+  # ---------------------------------------------------------------------------
+  schemas:
+    MessageRole:
+      type: string
+      enum: [system, user, assistant, tool]
+
+    Message:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          $ref: "#/components/schemas/MessageRole"
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                description: Multi-modal content parts (text, image_url, etc.)
+        name:
+          type: string
+          description: Optional name for the participant.
+
+    ChatCompletionRequest:
+      type: object
+      required: [messages]
+      properties:
+        model:
+          type: string
+          default: "auto"
+          description: >
+            Accepted but ignored by the router. The actual model is selected
+            by the routing engine based on classification and policy.
+          example: "auto"
+        messages:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Message"
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          nullable: true
+        max_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        stream:
+          type: boolean
+          default: false
+      additionalProperties: true
+      description: >
+        All additional OpenAI Chat Completions fields (top_p, presence_penalty,
+        tool_choice, tools, etc.) are accepted and passed through to the provider.
+
+    UsageInfo:
+      type: object
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+
+    ChatChoice:
+      type: object
+      properties:
+        index:
+          type: integer
+        message:
+          $ref: "#/components/schemas/Message"
+        finish_reason:
+          type: string
+          enum: [stop, length, tool_calls, content_filter]
+
+    ChatCompletionResponse:
+      type: object
+      required: [id, object, created, model, choices]
+      properties:
+        id:
+          type: string
+          description: Unique completion ID from the downstream provider.
+        object:
+          type: string
+          enum: [chat.completion]
+        created:
+          type: integer
+          description: Unix timestamp.
+        model:
+          type: string
+          description: >
+            The model actually used (e.g. claude-haiku-4-5-20251001), which may
+            differ from the model field in the request.
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatChoice"
+        usage:
+          $ref: "#/components/schemas/UsageInfo"
+
+    FeatureCostEntry:
+      type: object
+      properties:
+        featureTag:
+          type: string
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+        baselineCostUsd:
+          type: number
+          format: double
+        requestCount:
+          type: integer
+
+    ModelCostEntry:
+      type: object
+      properties:
+        model:
+          type: string
+        costUsd:
+          type: number
+          format: double
+        requestCount:
+          type: integer
+
+    StatsResponse:
+      type: object
+      required: [window, totalCostUsd, baselineCostUsd, savingsUsd, savingsPct, byFeature, byModel]
+      properties:
+        window:
+          type: string
+          enum: ["1h", "24h", "7d", "30d"]
+        totalCostUsd:
+          type: number
+          format: double
+        baselineCostUsd:
+          type: number
+          format: double
+        savingsUsd:
+          type: number
+          format: double
+        savingsPct:
+          type: number
+          format: double
+          description: Percentage saved vs. baseline. 0 if baseline is 0.
+        byFeature:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureCostEntry"
+        byModel:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelCostEntry"
+
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+  /v1/chat/completions:
+    post:
+      operationId: createChatCompletion
+      summary: Create a chat completion
+      description: >
+        OpenAI-compatible chat completion endpoint. The router classifies the
+        request and selects an appropriate model tier before forwarding to the
+        configured provider. The `model` field in the request is ignored.
+      tags: [chat]
+      parameters:
+        - $ref: "#/components/parameters/FeatureTag"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCompletionRequest"
+            examples:
+              simple:
+                summary: Simple query — will route to cheap tier
+                value:
+                  model: auto
+                  messages:
+                    - role: user
+                      content: "What is the capital of France?"
+              complex:
+                summary: Complex query — will route to premium tier
+                value:
+                  model: auto
+                  messages:
+                    - role: system
+                      content: "You are a senior software architect."
+                    - role: user
+                      content: "Design a distributed rate limiter that handles 1M req/s with sub-millisecond latency. Compare at least three approaches."
+              streaming:
+                summary: Streaming response
+                value:
+                  model: auto
+                  stream: true
+                  messages:
+                    - role: user
+                      content: "Tell me a short story."
+      responses:
+        "200":
+          description: >
+            Successful completion. When stream=false, returns ChatCompletionResponse.
+            When stream=true, returns text/event-stream with OpenAI SSE format.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatCompletionResponse"
+            text/event-stream:
+              schema:
+                type: string
+                description: >
+                  Server-sent events stream. Each event is:
+                  `data: <json chunk>\n\n`
+                  Terminates with `data: [DONE]\n\n`
+        "422":
+          description: Request body validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Downstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /internal/stats:
+    get:
+      operationId: getStats
+      summary: Get aggregated cost and routing statistics
+      description: >
+        Returns cost attribution data for the dashboard. Queries the
+        TimescaleDB continuous aggregate for fast response at any data volume.
+        Not authenticated in MVP — deploy behind a reverse proxy or VPC boundary.
+      tags: [internal]
+      parameters:
+        - name: window
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["1h", "24h", "7d", "30d"]
+            default: "24h"
+          description: Time window for aggregation.
+        - name: tenant
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter results to a specific tenant ID. If omitted, returns data for all tenants.
+      responses:
+        "200":
+          description: Aggregated stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsResponse"
+        "500":
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
