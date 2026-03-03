@@ -16,7 +16,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function CostByFeatureChart() {
   const { data, isLoading, error } = useSWR("/api/stats?window=7d", fetcher, {
-    refreshInterval: 300_000,
+    refreshInterval: 15_000,
   });
 
   return (

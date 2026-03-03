@@ -34,3 +34,9 @@ analysis/figures/
 
 # Local planning
 BACKLOG.md
+
+# Database backups (back these up to cloud storage, not git)
+backups/
+
+# Paper
+paper/

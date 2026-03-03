@@ -46,10 +46,10 @@ async def stats(
                 text(
                     f"""
                     SELECT
-                        COALESCE(feature_tag, 'untagged') AS feature_tag,
-                        SUM(cost_usd)                     AS cost_usd,
-                        SUM(baseline_cost_usd)            AS baseline_cost_usd,
-                        COUNT(*)                          AS request_count
+                        COALESCE(feature_tag, 'untagged') AS "featureTag",
+                        SUM(cost_usd)                     AS "costUsd",
+                        SUM(baseline_cost_usd)            AS "baselineCostUsd",
+                        COUNT(*)                          AS "requestCount"
                     FROM usage_events
                     WHERE ts >= :since {tenant_filter}
                     GROUP BY 1
@@ -67,8 +67,8 @@ async def stats(
                     f"""
                     SELECT
                         model,
-                        SUM(cost_usd)  AS cost_usd,
-                        COUNT(*)       AS request_count
+                        SUM(cost_usd)  AS "costUsd",
+                        COUNT(*)       AS "requestCount"
                     FROM usage_events
                     WHERE ts >= :since {tenant_filter}
                     GROUP BY 1

@@ -1,0 +1,30 @@
+# Real provider routing policy (ROUTER_MODE=real).
+#
+# Requires:  ANTHROPIC_API_KEY set in .env
+# Optional:  OPENAI_API_KEY if you want gpt-4o-mini for simple tier
+#
+# Tier → model mapping mirrors the mock policy but calls live APIs.
+# Swap individual tiers to openai/gpt-4o-mini etc. as needed.
+
+tiers:
+  simple:
+    provider: anthropic
+    model: claude-haiku-4-5-20251001
+  moderate:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  complex:
+    provider: anthropic
+    model: claude-sonnet-4-6
+  sensitive:
+    provider: anthropic
+    model: claude-opus-4-6
+
+overrides: []
+  # Examples:
+  # - match:
+  #     feature_tag: autocomplete
+  #   tier: simple
+  # - match:
+  #     feature_tag: legal-review
+  #   tier: sensitive

@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("window", window);
   if (tenant) url.searchParams.set("tenant", tenant);
 
-  const resp = await fetch(url.toString(), { next: { revalidate: 60 } });
+  const resp = await fetch(url.toString(), { cache: "no-store" });
   if (!resp.ok) {
     return NextResponse.json({ error: "Gateway error" }, { status: resp.status });
   }

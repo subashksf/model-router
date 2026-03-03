@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import AsyncIterator
 
@@ -82,8 +83,9 @@ class AnthropicProvider(BaseProvider):
             kwargs["temperature"] = request.temperature
 
         async with self._client.messages.stream(**kwargs) as stream:
-            async for text in stream.text_stream:
-                # Emit OpenAI-compatible SSE chunks
-                chunk = f'data: {{"choices":[{{"delta":{{"content":{text!r}}}}}]}}\n\n'
-                yield chunk.encode()
+            async for text_chunk in stream.text_stream:
+                payload = json.dumps({
+                    "choices": [{"delta": {"content": text_chunk}, "index": 0, "finish_reason": None}]
+                })
+                yield f"data: {payload}\n\n".encode()
         yield b"data: [DONE]\n\n"

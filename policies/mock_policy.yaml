@@ -1,0 +1,26 @@
+# Mock routing policy (ROUTER_MODE=mock).
+# No API keys required — responses are generated locally.
+# Use this for local development and pipeline smoke-tests.
+
+tiers:
+  simple:
+    provider: mock
+    model: mock-haiku
+  moderate:
+    provider: mock
+    model: mock-sonnet
+  complex:
+    provider: mock
+    model: mock-sonnet
+  sensitive:
+    provider: mock
+    model: mock-opus
+
+overrides: []
+  # Examples:
+  # - match:
+  #     feature_tag: autocomplete
+  #   tier: simple
+  # - match:
+  #     feature_tag: legal-review
+  #   tier: sensitive

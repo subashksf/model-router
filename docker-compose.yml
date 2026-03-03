@@ -5,6 +5,10 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      ROUTER_MODE: ${ROUTER_MODE:-mock}
+      DATABASE_URL_MOCK: postgresql+asyncpg://router:secret@db:5432/model_router
+      DATABASE_URL_REAL: postgresql+asyncpg://router:secret@db:5432/model_router_real
     depends_on:
       db:
         condition: service_healthy
@@ -20,6 +24,7 @@ services:
     env_file: .env
     environment:
       GATEWAY_INTERNAL_URL: http://gateway:8000
+      ROUTER_MODE: ${ROUTER_MODE:-mock}
     depends_on:
       - gateway
     restart: unless-stopped

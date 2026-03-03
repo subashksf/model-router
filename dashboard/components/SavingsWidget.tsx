@@ -5,12 +5,14 @@ import useSWR from "swr";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function fmt(n: number) {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+  // Use more decimal places for micro-dollar amounts so values don't collapse to "$0.00"
+  const decimals = Math.abs(n) < 0.005 ? 6 : 2;
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: decimals });
 }
 
 export function SavingsWidget() {
   const { data, error, isLoading } = useSWR("/api/stats?window=24h", fetcher, {
-    refreshInterval: 60_000,
+    refreshInterval: 10_000,
   });
 
   if (isLoading) return <p style={{ color: "#94a3b8" }}>Loading…</p>;
@@ -27,7 +29,7 @@ export function SavingsWidget() {
       }}
     >
       <StatCard label="Actual spend (24 h)" value={fmt(data.totalCostUsd)} />
-      <StatCard label="Baseline (all GPT-4o)" value={fmt(data.baselineCostUsd)} color="#94a3b8" />
+      <StatCard label="Baseline (all Opus)" value={fmt(data.baselineCostUsd)} color="#94a3b8" />
       <StatCard label="Savings" value={`${fmt(data.savingsUsd)} (${pct}%)`} color="#4ade80" />
     </div>
   );

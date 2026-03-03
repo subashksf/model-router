@@ -56,12 +56,29 @@ def load_policy(name: str) -> Policy:
 
 
 def get_policy(tenant_id: str | None) -> Policy:
-    """Return the policy for a tenant, falling back to the default."""
-    default = os.getenv("DEFAULT_POLICY", "default_policy.yaml")
+    """Return the policy for a tenant, falling back to the default.
+
+    Default policy is selected by ROUTER_MODE:
+      mock → default_policy.yaml  (or mock_policy.yaml if it exists)
+      real → real_policy.yaml     (or default_policy.yaml as fallback)
+    Overridden by DEFAULT_POLICY env var if set explicitly.
+    """
+    mode = os.getenv("ROUTER_MODE", "mock").lower()
+    mode_default = f"{mode}_policy.yaml"
+    explicit_default = os.getenv("DEFAULT_POLICY")
+
     if tenant_id:
-        tenant_file = f"{tenant_id}.yaml"
         try:
-            return load_policy(tenant_file)
+            return load_policy(f"{tenant_id}.yaml")
         except FileNotFoundError:
             pass
-    return load_policy(default)
+
+    # If the caller set DEFAULT_POLICY, honour it exactly.
+    if explicit_default:
+        return load_policy(explicit_default)
+
+    # Try the mode-specific file first, fall back to the original default.
+    try:
+        return load_policy(mode_default)
+    except FileNotFoundError:
+        return load_policy("default_policy.yaml")

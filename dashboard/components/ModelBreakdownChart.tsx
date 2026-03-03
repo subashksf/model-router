@@ -9,7 +9,7 @@ const COLORS = ["#6366f1", "#22d3ee", "#4ade80", "#f59e0b", "#f87171"];
 
 export function ModelBreakdownChart() {
   const { data, isLoading, error } = useSWR("/api/stats?window=7d", fetcher, {
-    refreshInterval: 300_000,
+    refreshInterval: 15_000,
   });
 
   return (
