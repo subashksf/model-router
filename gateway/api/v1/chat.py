@@ -1,11 +1,14 @@
 """POST /v1/chat/completions — OpenAI-compatible endpoint."""
 
+import logging
 import time
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from gateway.classifier.heuristic import classify
+from gateway.classifier.dispatch import classify
+
+log = logging.getLogger(__name__)
 from gateway.providers.registry import get_provider
 from gateway.router.engine import route
 from gateway.schemas import ChatCompletionRequest, ChatCompletionResponse
@@ -25,9 +28,14 @@ async def chat_completions(
 
     # 1. Classify
     classification = await classify(body.messages)
+    log.info(
+        "classify  tier=%s  tokens=%d  signals=%s",
+        classification.complexity, classification.token_count, classification.signals,
+    )
 
     # 2. Route → select provider + model
     routing = route(classification, tenant_id=x_tenant_id, feature_tag=x_feature_tag)
+    log.info("route     provider=%s  model=%s", routing.provider, routing.model)
 
     # 3. Call provider
     provider = get_provider(routing.provider)

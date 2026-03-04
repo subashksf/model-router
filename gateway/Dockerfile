@@ -12,7 +12,8 @@ RUN pip install --no-cache-dir \
     "anthropic>=0.40" \
     "openai>=1.50" \
     "sqlalchemy[asyncio]>=2.0" \
-    "asyncpg>=0.30"
+    "asyncpg>=0.30" \
+    "scikit-learn>=1.4"
 
 # Copy gateway source into /app/gateway/ so `from gateway.x import ...` resolves
 COPY . /app/gateway/

@@ -48,6 +48,11 @@ def _cost_usd(model: str, tokens_in: int, tokens_out: int) -> float:
     return (tokens_in * rate_in + tokens_out * rate_out) / 1_000
 
 
+def _classifier_from_signals(signals: list[str]) -> str:
+    """Derive classifier name from Classification.signals."""
+    return "learned" if "learned_classifier" in signals else "heuristic"
+
+
 async def _write(
     *,
     tenant_id: str | None,
@@ -61,6 +66,7 @@ async def _write(
     try:
         cost = _cost_usd(routing.model, tokens_in, tokens_out)
         baseline_cost = _cost_usd(_BASELINE_MODEL, tokens_in, tokens_out)
+        classifier = _classifier_from_signals(classification.signals)
 
         async with get_session() as session:
             await session.execute(
@@ -69,12 +75,12 @@ async def _write(
                     ts, tenant_id, feature_tag,
                     complexity, tier, provider, model,
                     tokens_in, tokens_out, latency_ms,
-                    cost_usd, baseline_cost_usd
+                    cost_usd, baseline_cost_usd, classifier
                 ) VALUES (
                     :ts, :tenant_id, :feature_tag,
                     :complexity, :tier, :provider, :model,
                     :tokens_in, :tokens_out, :latency_ms,
-                    :cost_usd, :baseline_cost_usd
+                    :cost_usd, :baseline_cost_usd, :classifier
                 )
                 """),
                 {
@@ -90,12 +96,13 @@ async def _write(
                     "latency_ms": int(latency_s * 1000),
                     "cost_usd": cost,
                     "baseline_cost_usd": baseline_cost,
+                    "classifier": classifier,
                 },
             )
             await session.commit()
         log.info(
-            "telemetry written: model=%s tokens_in=%d tokens_out=%d cost=%.8f baseline=%.8f",
-            routing.model, tokens_in, tokens_out, cost, baseline_cost,
+            "telemetry written: classifier=%s model=%s tokens_in=%d tokens_out=%d cost=%.8f",
+            classifier, routing.model, tokens_in, tokens_out, cost,
         )
     except Exception:
         log.exception("telemetry write failed — row dropped")

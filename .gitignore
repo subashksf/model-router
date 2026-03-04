@@ -35,6 +35,7 @@ experiments/datasets/train.json
 
 # Trained model binaries
 experiments/models/*.pkl
+gateway/classifier/artifacts/*.pkl
 
 # Jupyter
 .ipynb_checkpoints/

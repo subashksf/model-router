@@ -34,6 +34,7 @@ from typing import Awaitable, Callable
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from gateway.classifier.heuristic import classify as _heuristic_classify  # noqa: E402
+from gateway.classifier.model import classify as _model_classify  # noqa: E402
 from gateway.schemas import Message  # noqa: E402
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -50,10 +51,15 @@ async def _heuristic(messages: list[Message]) -> str:
     result = await _heuristic_classify(messages)
     return result.complexity
 
+
+async def _learned(messages: list[Message]) -> str:
+    result = await _model_classify(messages)
+    return result.complexity
+
 # ── Registry ──────────────────────────────────────────────────────────────────
 CLASSIFIERS: dict[str, ClassifierFn] = {
     "heuristic": _heuristic,
-    # "xgboost":   _xgboost,    # add when implemented
+    "learned":   _learned,
     # "embedding": _embedding,  # add when implemented
 }
 
@@ -296,8 +302,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--classifier",
         default="heuristic",
-        choices=list(CLASSIFIERS.keys()),
-        help="Classifier to evaluate (default: heuristic)",
+        help="Classifier to evaluate (default: heuristic). Available: " + ", ".join(CLASSIFIERS.keys()),
     )
     parser.add_argument(
         "--all",
