@@ -28,6 +28,14 @@ out/
 # Experiment results (large, generated — commit selectively)
 experiments/results/*.json
 
+# Generated datasets (reproducible — only prompts.json is committed)
+experiments/datasets/raw_generated.jsonl
+experiments/datasets/labeled.jsonl
+experiments/datasets/train.json
+
+# Trained model binaries
+experiments/models/*.pkl
+
 # Jupyter
 .ipynb_checkpoints/
 analysis/figures/

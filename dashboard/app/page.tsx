@@ -3,6 +3,8 @@
 import { SavingsWidget } from "@/components/SavingsWidget";
 import { CostByFeatureChart } from "@/components/CostByFeatureChart";
 import { ModelBreakdownChart } from "@/components/ModelBreakdownChart";
+import { RoutingAccuracyChart } from "@/components/RoutingAccuracyChart";
+import { LatencyChart } from "@/components/LatencyChart";
 
 export default function DashboardPage() {
   return (
@@ -14,6 +16,11 @@ export default function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
         <CostByFeatureChart />
         <ModelBreakdownChart />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
+        <RoutingAccuracyChart />
+        <LatencyChart />
       </div>
     </main>
   );

@@ -79,6 +79,51 @@ async def stats(
             )
         ).mappings().all()
 
+        # Routing accuracy by tier
+        # complexity = classifier output (expected); tier = actual routing decision
+        by_tier_accuracy_rows = (
+            await session.execute(
+                text(
+                    f"""
+                    SELECT
+                        complexity                                                    AS "tier",
+                        COUNT(*)                                                      AS "totalRequests",
+                        SUM(CASE WHEN tier = complexity THEN 1 ELSE 0 END)           AS "matchedRequests",
+                        ROUND(
+                            AVG(CASE WHEN tier = complexity THEN 1.0 ELSE 0.0 END) * 100,
+                            1
+                        )                                                             AS "accuracy"
+                    FROM usage_events
+                    WHERE ts >= :since {tenant_filter}
+                    GROUP BY 1
+                    ORDER BY 1
+                    """
+                ),
+                {"since": since, "tenant": tenant},
+            )
+        ).mappings().all()
+
+        # Latency percentiles by tier
+        by_tier_latency_rows = (
+            await session.execute(
+                text(
+                    f"""
+                    SELECT
+                        complexity                                                  AS "tier",
+                        ROUND(AVG(latency_ms)::numeric, 1)                         AS "avgMs",
+                        PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY latency_ms)   AS "p50Ms",
+                        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms)   AS "p95Ms",
+                        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY latency_ms)   AS "p99Ms"
+                    FROM usage_events
+                    WHERE ts >= :since {tenant_filter}
+                    GROUP BY 1
+                    ORDER BY 1
+                    """
+                ),
+                {"since": since, "tenant": tenant},
+            )
+        ).mappings().all()
+
     total = float(totals["total_cost_usd"])
     baseline = float(totals["baseline_cost_usd"])
     savings = baseline - total
@@ -91,4 +136,6 @@ async def stats(
         "savingsPct": (savings / baseline * 100) if baseline else 0,
         "byFeature": [dict(r) for r in by_feature_rows],
         "byModel": [dict(r) for r in by_model_rows],
+        "byTierAccuracy": [dict(r) for r in by_tier_accuracy_rows],
+        "byTierLatency": [dict(r) for r in by_tier_latency_rows],
     }

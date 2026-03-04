@@ -1,0 +1,17 @@
+[project]
+name = "model-router-experiments"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40",
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "numpy>=1.26",
+]
+
+[tool.setuptools]
+packages = []
+
+# Install:  pip install -e experiments/
+# Run:      export ANTHROPIC_API_KEY=sk-ant-...
+#           python experiments/generate_dataset.py run-all --n 1200
